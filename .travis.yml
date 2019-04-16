@@ -1,0 +1,20 @@
+language: rust
+
+rust: nightly
+
+os:
+  - linux
+
+script:
+  - cargo build
+  - cargo install ripgrep --version="0.9.0"
+  - cargo run install exa
+  - cargo run upgrade exa
+  - cargo run upgrade ripgrep
+  - cargo run install
+  - cargo run upgrade
+  - exa --version
+  - fd --version
+  - rg --version
+  - bat --version
+
