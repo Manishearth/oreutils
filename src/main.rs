@@ -3,6 +3,8 @@ use semver::Version;
 use std::process::Command;
 use structopt::StructOpt;
 
+mod fetch;
+
 #[derive(Debug, StructOpt)]
 #[structopt(
     name = "oreutils",
@@ -77,7 +79,7 @@ fn upgrade() {
     for tool in TOOLS {
         let res = upgrade_tool(tool);
         match res {
-            Ok(vers) => println!("Tool {} updated from version {}", tool.name, vers),
+            Ok(vers) => println!("Tool {} updated to version {}", tool.name, vers),
             Err(Error::NotFound) => println!(
                 "Tool {} not installed, use `oreutils install` to install",
                 tool.name
@@ -89,6 +91,10 @@ fn upgrade() {
                 "`{} --version` didn't produce expected output: could not parse {}",
                 tool.cli, v
             ),
+            Err(Error::CratesFetchError(e)) => println!(
+                "Failed to fetch information for crate {} from crates.io: {}",
+                tool.name, e
+            ),
         }
     }
 }
@@ -96,6 +102,7 @@ fn upgrade() {
 enum Error {
     NotFound,
     VersionBroken(Option<String>),
+    CratesFetchError(fetch::FetchError),
 }
 
 fn upgrade_tool(tool: &Tool) -> Result<Version, Error> {
@@ -111,8 +118,15 @@ fn upgrade_tool(tool: &Tool) -> Result<Version, Error> {
         .ok_or(Error::VersionBroken(Some(output.into())))?;
     let vers = vers.as_str();
     let vers = Version::parse(vers).map_err(|_| Error::VersionBroken(Some(vers.into())))?;
-    cargo_install(tool.package, true);
-    Ok(vers)
+    let latest_vers =
+        fetch::get_latest_version(tool.package).map_err(|e| Error::CratesFetchError(e))?;
+
+    if vers < latest_vers {
+       cargo_install(tool.package, true); 
+    } else {
+        println!("Tool {} is up to date", tool.name);
+    }
+    Ok(latest_vers)
 }
 
 fn uninstall() {
@@ -128,7 +142,13 @@ fn cargo_install(pkg: &str, force: bool) {
     }
     cmd.env("RUSTFLAGS", "-Ctarget-cpu=native");
     let res = cmd.spawn();
-    if res.is_err() {
-        eprintln!("Installing {:?} failed", pkg);
+    match res {
+        Ok(mut child) => {
+            let status = child.wait().expect("Command wasn't running");
+            if !status.success() {
+                eprintln!("Installing {:?} failed", pkg);
+            }
+        }
+        Err(_) => eprintln!("Cargo didn't start"),
     }
 }
