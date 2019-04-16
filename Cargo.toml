@@ -1,13 +1,13 @@
 [package]
 name = "oreutils"
-version = "0.0.2"
+version = "0.0.3"
 authors = ["Manish Goregaokar <manishsmail@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
 description = "Installer for various Rust reimaginations of coreutils. These are not drop-in replacements."
 repository = "https://github.com/manishearth/oreutils"
 documentation = "https://github.com/manishearth/oreutils"
-
+readme = "README.md"
 
 [dependencies]
 structopt = "0.2.15"

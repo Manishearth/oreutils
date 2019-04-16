@@ -652,7 +652,7 @@ dependencies = [
 
 [[package]]
 name = "oreutils"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
  "env_proxy 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 1.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
