@@ -13,19 +13,32 @@ mod fetch;
 )]
 enum Opt {
     #[structopt(about = "Install the basic utilities: ripgrep, exa, bat, fd")]
-    Install,
+    Install {
+        #[structopt(help = "Specific tool to install. Omit to install all.")]
+        tool: Option<String>,
+    },
     #[structopt(
         about = "Upgrade any installed tools. Use `oreutils install` to install missing ones."
     )]
-    Upgrade,
+    Upgrade {
+        #[structopt(help = "Specific tool to upgrade. Omit to upgrade all.")]
+        tool: Option<String>,
+    },
     #[structopt(about = "Uninstall all oreutils tools")]
     Uninstall,
 }
 
+#[derive(Clone, Copy)]
 struct Tool {
     name: &'static str,
     package: &'static str,
     cli: &'static str,
+}
+
+impl Tool {
+    fn equals(&self, other: &str) -> bool {
+        self.name == other || self.package == other || self.cli == other
+    }
 }
 
 const TOOLS: &[Tool] = &[
@@ -55,28 +68,41 @@ fn main() {
     let opt = Opt::from_args();
 
     match opt {
-        Opt::Install => install(),
-        Opt::Upgrade => upgrade(),
+        Opt::Install {tool} => install(tool),
+        Opt::Upgrade {tool} => upgrade(tool),
         Opt::Uninstall => uninstall(),
     }
 }
 
-fn install() {
-    for tool in TOOLS {
+fn install(tool: Option<String>) {
+    for_each_tool(tool, |tool| {
         let exists = which::which(tool.cli);
         if exists.is_ok() {
             println!(
                 "Tool {:?} already installed, use `oreutils upgrade` to upgrade",
                 tool.name
             );
-            continue;
+            return;
         }
         cargo_install(tool.package, false);
-    }
+    });
 }
 
-fn upgrade() {
-    for tool in TOOLS {
+
+fn for_each_tool<F: Fn(&Tool)>(tool: Option<String>, f: F) {
+    if let Some(tool) = tool {
+        for tool in TOOLS.iter().filter(|x| x.equals(&tool)) {
+            f(tool)
+        }
+    } else {
+        for tool in TOOLS.iter()  {
+            f(tool)
+        }
+    };
+}
+
+fn upgrade(tool: Option<String>) {
+    for_each_tool(tool, |tool| {
         let res = upgrade_tool(tool);
         match res {
             Ok(vers) => println!("Tool {} updated to version {}", tool.name, vers),
@@ -91,18 +117,20 @@ fn upgrade() {
                 "`{} --version` didn't produce expected output: could not parse {}",
                 tool.cli, v
             ),
+            Err(Error::AlreadyUpdated(v)) => println!("Tool {} is already up to date at version {}", tool.name, v),
             Err(Error::CratesFetchError(e)) => println!(
                 "Failed to fetch information for crate {} from crates.io: {}",
                 tool.name, e
             ),
         }
-    }
+    });
 }
 
 enum Error {
     NotFound,
     VersionBroken(Option<String>),
     CratesFetchError(fetch::FetchError),
+    AlreadyUpdated(Version)
 }
 
 fn upgrade_tool(tool: &Tool) -> Result<Version, Error> {
@@ -122,11 +150,11 @@ fn upgrade_tool(tool: &Tool) -> Result<Version, Error> {
         fetch::get_latest_version(tool.package).map_err(|e| Error::CratesFetchError(e))?;
 
     if vers < latest_vers {
-       cargo_install(tool.package, true); 
+        cargo_install(tool.package, true);
+        Ok(latest_vers)
     } else {
-        println!("Tool {} is up to date", tool.name);
+        Err(Error::AlreadyUpdated(vers))
     }
-    Ok(latest_vers)
 }
 
 fn uninstall() {
