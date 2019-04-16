@@ -11,6 +11,19 @@ enum Opt {
     Uninstall,
 }
 
+struct Tool {
+    package: &'static str,
+    cli: &'static str,
+}
+
+
+const TOOLS: &[Tool] = &[
+    Tool {package: "ripgrep", cli: "rg"},
+    Tool {package: "exa", cli: "exa"},
+    Tool {package: "bat", cli: "bat"},
+    Tool {package: "fd-find", cli: "fd"},
+];
+
 fn main() {
     let opt = Opt::from_args();
 
