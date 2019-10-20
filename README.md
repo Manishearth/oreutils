@@ -21,10 +21,11 @@ oreutils install
 To upgrade your installed `oreutils`, run `oreutils upgrade`;
 
 This tool currently installs:
- - `ripgrep`, a `grep` replacement
- - `exa`, an `ls` replacement
- - `fd`, a `find` replacement
- - `bat`, a `cat` replacement
+ - [`ripgrep`], a `grep` replacement
+ - [`exa`], an `ls` replacement
+ - [`fd`], a `find` replacement
+ - [`bat`], a `cat` replacement
+ - [`sd`], a `sed` replacement
 
 More tools may be added. Please file an issue!
 
@@ -32,3 +33,4 @@ More tools may be added. Please file an issue!
  [`exa`]: https://the.exa.website/
  [`bat`]: https://github.com/sharkdp/bat
  [`fd`]: https://github.com/sharkdp/fd
+ [`sd`]: https://github.com/chmln/sd

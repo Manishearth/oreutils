@@ -62,6 +62,11 @@ const TOOLS: &[Tool] = &[
         package: "fd-find",
         cli: "fd",
     },
+    Tool {
+        name: "sd",
+        package: "sd",
+        cli: "sd",
+    }
 ];
 
 fn main() {
